@@ -9,7 +9,12 @@ var builder = WebApplication.CreateBuilder(args);
 
 
 //Manter a Lista em memória numa mesma instancia durante a execução da API.
-builder.Services.AddDbContext<DevEventsDbContext>(o => o.UseInMemoryDatabase("DevEventsDb"));
+//builder.Services.AddDbContext<DevEventsDbContext>(o => o.UseInMemoryDatabase("DevEventsDb"));
+
+
+//Salvar em BD com as configurações do appsettings.json
+var connectionSring = builder.Configuration.GetConnectionString("DevEventsCs");
+builder.Services.AddDbContext<DevEventsDbContext>(o => o.UseSqlServer(connectionSring));
 
 
 builder.Services.AddControllers();
