@@ -68,5 +68,20 @@ namespace DevEvents.API.Controllers
 
             return NoContent();
         }
+
+
+        [HttpPost("{id}/speakers")]
+        public IActionResult PostSpeaker(Guid idEvent, DevEventSpeaker speaker)
+        {
+            //Traz todos o evento pelo id
+            var devEvent = _context.DevEvents.SingleOrDefault(d => d.Id == idEvent);
+
+            if (devEvent == null)
+                return NotFound();
+
+            devEvent.Speakers.Add(speaker);
+
+            return NoContent();
+        }
     }
 }
