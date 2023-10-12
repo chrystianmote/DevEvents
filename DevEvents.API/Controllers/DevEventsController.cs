@@ -20,7 +20,9 @@ namespace DevEvents.API.Controllers
         public IActionResult GetAll()
         {
             //Traz todos os eventos onde não está deletado/cancelado 
-            var devEvents = _context.DevEvents.Where(d => !d.IsDeleted).ToList();
+            var devEvents = _context.DevEvents
+                .Include(de => de.Speakers)
+                .Where(d => !d.IsDeleted).ToList();
             return Ok(devEvents);
         }
         [HttpGet("{id}")]
@@ -80,10 +82,10 @@ namespace DevEvents.API.Controllers
 
 
         [HttpPost("{id}/speakers")]
-        public IActionResult PostSpeaker(Guid idEvent, DevEventSpeaker speaker)
+        public IActionResult PostSpeaker(Guid id, DevEventSpeaker speaker)
         {
-            speaker.DevEventId = idEvent;
-            var devEvent = _context.DevEvents.Any(d => d.Id == idEvent);
+            speaker.DevEventId = id;
+            var devEvent = _context.DevEvents.Any(d => d.Id == id);
 
             if (!devEvent)
                 return NotFound();
