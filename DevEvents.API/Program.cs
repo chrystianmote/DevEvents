@@ -1,10 +1,16 @@
 using DevEvents.API.Persistence;
+using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Migrations;
+using static Microsoft.EntityFrameworkCore.DbLoggerCategory;
 
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
-//Manter a Lista numa mesma instancia durante a execução da API.
-builder.Services.AddSingleton<DevEventsDbContext>();
+
+
+//Manter a Lista em memória numa mesma instancia durante a execução da API.
+builder.Services.AddDbContext<DevEventsDbContext>(o => o.UseInMemoryDatabase("DevEventsDb"));
+
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle

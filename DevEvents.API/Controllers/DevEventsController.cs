@@ -2,6 +2,7 @@
 using DevEvents.API.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 
 namespace DevEvents.API.Controllers
 {
@@ -26,7 +27,9 @@ namespace DevEvents.API.Controllers
         public IActionResult GetById(Guid id)
         {
             //Traz todos o evento pelo id
-            var devEvent = _context.DevEvents.SingleOrDefault(d => d.Id == id);
+            var devEvent = _context.DevEvents
+                .Include(de => de.Speakers)
+                .SingleOrDefault(d => d.Id == id);
 
             return devEvent == null ? NotFound() : Ok(devEvent);
 
@@ -36,6 +39,8 @@ namespace DevEvents.API.Controllers
         public IActionResult Post(DevEvent devEvent)
         {
             _context.DevEvents.Add(devEvent);
+            _context.SaveChanges();
+
             //retorna após a conferência do objeto cadastrado
             return CreatedAtAction(nameof(GetById), new { id = devEvent.Id }, devEvent);
         }
@@ -43,7 +48,7 @@ namespace DevEvents.API.Controllers
         [HttpPut("{id}")]
         public IActionResult Update(Guid id, DevEvent input)
         {
-            //Traz todos o evento pelo id
+            //Traz o evento pelo id
             var devEvent = _context.DevEvents.SingleOrDefault(d => d.Id == id);
 
             if (devEvent == null)
@@ -51,6 +56,8 @@ namespace DevEvents.API.Controllers
 
             devEvent.Update(input.Title, input.Description, input.StartDate, input.EndDate);
 
+            _context.DevEvents.Update(devEvent);
+            _context.SaveChanges();
             return NoContent();
 
         }
@@ -58,13 +65,15 @@ namespace DevEvents.API.Controllers
         [HttpDelete("{id}")]
         public IActionResult Delete(Guid id)
         {
-            //Traz todos o evento pelo id
+            //Traz o evento pelo id
             var devEvent = _context.DevEvents.SingleOrDefault(d => d.Id == id);
 
             if (devEvent == null)
                 return NotFound();
 
             devEvent.Delete();
+
+            _context.SaveChanges();
 
             return NoContent();
         }
@@ -73,13 +82,14 @@ namespace DevEvents.API.Controllers
         [HttpPost("{id}/speakers")]
         public IActionResult PostSpeaker(Guid idEvent, DevEventSpeaker speaker)
         {
-            //Traz todos o evento pelo id
-            var devEvent = _context.DevEvents.SingleOrDefault(d => d.Id == idEvent);
+            speaker.DevEventId = idEvent;
+            var devEvent = _context.DevEvents.Any(d => d.Id == idEvent);
 
-            if (devEvent == null)
+            if (!devEvent)
                 return NotFound();
 
-            devEvent.Speakers.Add(speaker);
+            _context.DevEventSpeakers.Add(speaker);
+            _context.SaveChanges();
 
             return NoContent();
         }
