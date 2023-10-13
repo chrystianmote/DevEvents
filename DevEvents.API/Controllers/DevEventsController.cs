@@ -1,4 +1,6 @@
-﻿using DevEvents.API.Entities;
+﻿using AutoMapper;
+using DevEvents.API.Entities;
+using DevEvents.API.Models;
 using DevEvents.API.Persistence;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -11,9 +13,13 @@ namespace DevEvents.API.Controllers
     public class DevEventsController : ControllerBase
     {
         private readonly DevEventsDbContext _context;
-        public DevEventsController(DevEventsDbContext context)
+        private readonly IMapper _mapper;
+
+
+        public DevEventsController(DevEventsDbContext context, IMapper mapper)
         {
             _context = context;
+            _mapper = mapper;
         }
 
 
@@ -27,10 +33,12 @@ namespace DevEvents.API.Controllers
         public IActionResult GetAll()
         {
             //Traz todos os eventos onde não está deletado/cancelado 
-            var devEvents = _context.DevEvents
-                .Include(de => de.Speakers)
-                .Where(d => !d.IsDeleted).ToList();
-            return Ok(devEvents);
+            var devEvents = _context.DevEvents.Where(d => !d.IsDeleted).ToList();
+
+            //Disponibiliza para o requisitante os dados dos eventos do viewmodel.
+            var viewModel = _mapper.Map<List<DevEventViewModel>>(devEvents);
+
+            return Ok(viewModel);
         }
 
 
@@ -53,7 +61,9 @@ namespace DevEvents.API.Controllers
                 .Include(de => de.Speakers)
                 .SingleOrDefault(d => d.Id == id);
 
-            return devEvent == null ? NotFound() : Ok(devEvent);
+            var viewModel = _mapper.Map<DevEventViewModel>(devEvent);
+
+            return devEvent == null ? NotFound() : Ok(viewModel);
 
         }
 
@@ -71,19 +81,25 @@ namespace DevEvents.API.Controllers
         ///  "isDeleted": false (foi cancelado ou não)
         ///}
         /// </remarks>
-        /// <param name="devEvent">Dados do Evento</param>
+        /// <param name="input">Dados do Evento</param>
         /// <returns>Objeto criado do Evento</returns>
         /// <response code="201">Sucesso</response>
 
         [HttpPost]
         [ProducesResponseType(StatusCodes.Status201Created)]
-        public IActionResult Post(DevEvent devEvent)
+        public IActionResult Post(DevEventInputModel input)
         {
+            //Coloca o modelo de entrada e converte pro modelo do Banco para cadastro
+            var devEvent = _mapper.Map<DevEvent>(input);
+
             _context.DevEvents.Add(devEvent);
             _context.SaveChanges();
 
-            //retorna após a conferência do objeto cadastrado
-            return CreatedAtAction(nameof(GetById), new { id = devEvent.Id }, devEvent);
+            //Converte o modelo de saída para exibicao ao requisitante
+            var viewModel = _mapper.Map<DevEventViewModel>(devEvent);
+
+            //retorna o modelo de saída após a conferência do objeto cadastrado.
+            return CreatedAtAction(nameof(GetById), new { id = viewModel.Id }, viewModel);
         }
 
 
@@ -107,7 +123,7 @@ namespace DevEvents.API.Controllers
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult Update(Guid id, DevEvent input)
+        public IActionResult Update(Guid id, DevEventInputModel input)
         {
             //Traz o evento pelo id
             var devEvent = _context.DevEvents.SingleOrDefault(d => d.Id == id);
@@ -119,6 +135,7 @@ namespace DevEvents.API.Controllers
 
             _context.DevEvents.Update(devEvent);
             _context.SaveChanges();
+
             return NoContent();
 
         }
@@ -162,7 +179,7 @@ namespace DevEvents.API.Controllers
         ///    }
         /// </remarks>
         /// <param name="id">Identificador do Evento</param>
-        /// <param name="speaker">Dados do Palestrante</param>
+        /// <param name="input">Dados do Palestrante</param>
         /// <returns>Nenhum Conteúdo</returns>
         /// <response code="204">Sucesso</response>
         /// <response code="404">Não Encontrado</response>
@@ -170,8 +187,11 @@ namespace DevEvents.API.Controllers
         [HttpPost("{id}/speakers")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public IActionResult PostSpeaker(Guid id, DevEventSpeaker speaker)
+        public IActionResult PostSpeaker(Guid id, DevEventSpeakerInputModel input)
         {
+            //Coloca o modelo de entrada e converte pro modelo do Banco para cadastro
+            var speaker = _mapper.Map<DevEventSpeaker>(input);
+
             speaker.DevEventId = id;
             var devEvent = _context.DevEvents.Any(d => d.Id == id);
 

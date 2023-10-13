@@ -1,3 +1,4 @@
+using DevEvents.API.Mappers;
 using DevEvents.API.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Migrations;
@@ -17,6 +18,8 @@ var builder = WebApplication.CreateBuilder(args);
 var connectionSring = builder.Configuration.GetConnectionString("DevEventsCs");
 builder.Services.AddDbContext<DevEventsDbContext>(o => o.UseSqlServer(connectionSring));
 
+//O Sistema rastreia todos os perfis programados do Automapper passando somente 1.
+builder.Services.AddAutoMapper(typeof(DevEventProfile).Assembly);
 
 builder.Services.AddControllers();
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
